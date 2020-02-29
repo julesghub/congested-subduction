@@ -64,7 +64,7 @@ subplate3 = {
     'viscosity': 1.930e+04 * u.pascal * u.second * 1e20, 
     'density'  : 3.849e-01,
     'cohesion' : 1.213e+02 * u.megapascal,
-    'cohesion2': 6.066e+01 * u.megapascal,      
+    'cohesion2': 1.200e+01 * u.megapascal,      
 }
 
 subplate4 = {
@@ -72,8 +72,9 @@ subplate4 = {
     'index'    : 6,
     'viscosity': 9.641e+01 * u.pascal * u.second * 1e20, 
     'density'  : 2.228e-01,
-    'cohesion' : 1.000e+03 * u.megapascal,
-    'cohesion2': 1.000e+03 * u.megapascal,      
+    # no yielding
+#     'cohesion' : 1.000e+03 * u.megapascal,
+#     'cohesion2': 1.000e+03 * u.megapascal,      
 }
 
 # weak back arc material properties
@@ -98,16 +99,18 @@ backArc2 = {
 trans1 = {
     'name'     : 'trans1',
     'index'    : 9,
-    'viscosity':  5.000e+03 * u.pascal * u.second * 1e20, 
+    'viscosity': 5.000e+03 * u.pascal * u.second * 1e20, 
     'density'  : -1.977e+00,
-    'cohesion' :  1.000e+03 * u.megapascal,
+    'cohesion' : 4.000e+01 * u.megapascal,
+    'cohesion2': 2.000e+01 * u.megapascal,
 }
 trans2 = {
     'name'     : 'trans2',
     'index'    : 10,
-    'viscosity':  1.502e+03 * u.pascal * u.second * 1e20, 
+    'viscosity':  5.000e+03 * u.pascal * u.second * 1e20, 
     'density'  :  2.550e-01,
-    'cohesion' :  1.000e+03 * u.megapascal,
+    'cohesion' :  1.500e+02 * u.megapascal,
+    'cohesion2':  7.500e+01 * u.megapascal,
 }
 
 # cratonic lithosphere
@@ -116,16 +119,17 @@ craton1 = {
     'index'    : 11,
     'viscosity':  5.000e+03 * u.pascal * u.second * 1e20, 
     'density'  : -2.118e+00,
-    'cohesion' :  1.000e+03 * u.megapascal,
+    'cohesion' :  1.3000e+02 * u.megapascal,
+    'cohesion2':  6.500e+01 * u.megapascal,
 }
 
 craton2 = {
     'name'     : 'craton2',
     'index'    : 12,
-    'viscosity':  1.675e+03 * u.pascal * u.second * 1e20, 
+    'viscosity':  5.000e+03 * u.pascal * u.second * 1e20, 
     'density'  :  2.533e-01,
-    'cohesion' :  1.000e+03 * u.megapascal,
-}
+    'cohesion' :  1.3000e+02 * u.megapascal,
+    'cohesion2':  6.500e+01 * u.megapascal,}
 
 # assume ribbon and buoyant strip have cratonic material properties
 ribbon = {
