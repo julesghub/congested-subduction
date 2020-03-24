@@ -11,7 +11,7 @@ ref_density      = mantle_density * (modprop.Tint-modprop.Tsurf) * alpha
 
 # Material properties
 um = {
-    'name'     : 'upper mantle',
+    'name'     : 'Model', # really the 'upper mantle'
     'index'    : 0,
     'viscosity': 1. * u.pascal * u.second * 1e20, 
     'density'  : 0.,
@@ -53,11 +53,11 @@ subplate2 = {
     'index'    : 4,
     'viscosity':  1.000e+05 * u.pascal * u.second * 1e20, 
     'density'  :  6.040e-01,
-    'cohesion' :  6.744e+01  * u.megapascal,
+    'cohesion' :  6.744e+01 * u.megapascal,
     'cohesion2':  3.372e+01 * u.megapascal,      
 }
 
-          
+
 subplate3 = {
     'name'     : 'oceanic plate 3',
     'index'    : 5,
