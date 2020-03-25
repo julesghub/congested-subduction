@@ -24,7 +24,7 @@ GEO.__file__
 
 
 import geo_model_properties as modprop
-import geo_material_properties as matprop
+
 
 
 # %%
