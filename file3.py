@@ -87,7 +87,7 @@ else:
 Model = GEO.Model(elementRes = nEls,
                   minCoord   = minCoord,
                   maxCoord   = maxCoord,
-                  gravity    = z_hat,
+                  gravity    = g_vec,
                   outputDir  = outputPath)
 
 resolution = [ abs(Model.maxCoord[d]-Model.minCoord[d])/Model.elementRes[d] for d in range(Model.mesh.dim) ]
