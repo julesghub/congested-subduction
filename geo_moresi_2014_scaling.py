@@ -7,29 +7,6 @@
 # %%
 
 
-import UWGeodynamics as GEO
-
-from UWGeodynamics.scaling import units as u
-from UWGeodynamics.scaling import dimensionalise, non_dimensionalise
-from UWGeodynamics.scaling import non_dimensionalise as nd
-
-
-# %%
-
-
-GEO.__file__
-
-
-# %%
-
-
-import geo_model_properties as modprop
-
-
-
-# %%
-
-
 dRho =   80. * u.kilogram / u.meter**3 # matprop.ref_density
 g    =   10. * u.meter / u.second**2   # modprop.gravity
 H    = 1000. * u.kilometer #  modprop.boxHeight
@@ -40,16 +17,12 @@ ref_stress = dRho * g * H
 ref_viscosity = 1e20 * u.pascal * u.seconds
 
 
-# %%
-
 
 ref_time        = ref_viscosity/ref_stress
 ref_length      = H
 ref_mass        = (ref_viscosity*ref_length*ref_time).to_base_units()
 ref_temperature = modprop.Tint - modprop.Tsurf
 
-
-# %%
 
 
 KL = ref_length       

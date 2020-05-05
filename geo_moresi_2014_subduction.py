@@ -46,9 +46,49 @@ import os
 import scipy
 
 # %%
-import geo_model_properties as modprop
-import relrho_geo_material_properties as matprop
-import geo_moresi_2014_scaling
+gravity = 9.8 * u.meter / u.second**2
+Tsurf   = 273.15 * u.degK
+Tint    = 1573.0 * u.degK
+
+kappa   = 1e-6   * u.meter**2 / u.second 
+
+boxLength = 6000.0 * u.kilometer
+boxHeight =  800.0 * u.kilometer
+boxWidth  = 3000.0 * u.kilometer
+
+dRho =   80. * u.kilogram / u.meter**3 # matprop.ref_density
+g    =   10. * u.meter / u.second**2   # modprop.gravity
+H    = 1000. * u.kilometer #  modprop.boxHeight
+
+# lithostatic pressure for mass-time-length
+ref_stress = dRho * g * H
+# viscosity of upper mante for mass-time-length
+ref_viscosity = 1e20 * u.pascal * u.seconds
+
+ref_time        = ref_viscosity/ref_stress
+ref_length      = H
+ref_mass        = (ref_viscosity*ref_length*ref_time).to_base_units()
+ref_temperature = Tint - Tsurf
+
+KL = ref_length       
+KM = ref_mass         
+Kt = ref_time
+KT = ref_temperature
+
+# KL = 1 * u.m  
+# KM = 1 * u.kg         
+# Kt = 1 * u.sec
+# KT = 1 * u.degK
+
+scaling_coefficients = GEO.scaling.get_coefficients()
+
+scaling_coefficients["[length]"] = KL.to_base_units()
+scaling_coefficients["[time]"]   = Kt.to_base_units()
+scaling_coefficients["[mass]"]   = KM.to_base_units()
+scaling_coefficients["[temperature]"]   = KT.to_base_units()
+
+# import relrho_geo_material_properties as matprop
+import absrho_geo_material_properties as matprop
 
 # %%
 # shortcuts for parallel wrappers
@@ -94,12 +134,6 @@ if checkpoint_restart == True:
 # **Create mesh and finite element variables**
 
 # %%
-# Domain
-boxLength = modprop.boxLength
-boxHeight = modprop.boxHeight
-boxWidth  = modprop.boxWidth
-
-# %%
 # Define our vertical unit vector using a python tuple
 g_mag = 9.8 * u.meter / u.sec**2
 
@@ -116,8 +150,11 @@ else:
 Model = GEO.Model(elementRes = nEls,
                   minCoord   = minCoord,
                   maxCoord   = maxCoord,
-                  gravity    = z_hat,
+                  gravity    = g_vec,
                   outputDir  = outputPath)
+
+# %%
+Model.defaultStrainRate = 1e-18 / u.second
 
 # %%
 resolution = [ abs(Model.maxCoord[d]-Model.minCoord[d])/Model.elementRes[d] for d in range(Model.mesh.dim) ]
@@ -131,7 +168,6 @@ if rank == 0:
 # I assume here the origin is a the top, front, middle
 # 'middle' being the slab hinge at top, front
 
-pert = 0.3  # nondimensional pert 
 slab_xStart = 2500. * u.kilometer
 slab_dx = 3000.0 * u.kilometer  # was 7000 km in Moresi 2014
 slab_dy =  100.0 * u.kilometer
@@ -168,11 +204,6 @@ bouyStrip_xStart = slab_xStart + slab_dx - bouyStrip_dx
 # %%
 #variables for initialisation of shapes
 
-slab_y1 = -0*nd(slab_crust)
-slab_y2 = -1*nd(slab_dy)/slab_layers
-slab_y3 = -2*nd(slab_dy)/slab_layers
-slab_y4 = -3*nd(slab_dy)/slab_layers
-
 s_y1 = -0*slab_dy # get dimensionality with slab_dy
 s_y2 = -1*slab_dy/slab_layers
 s_y3 = -2*slab_dy/slab_layers
@@ -182,7 +213,7 @@ backarc_dx = 1200. * u.kilometer
 backarc_dy =  100. * u.kilometer
 backarc_xStart = slab_xStart - backarc_dx
 backarc_layers = 2
-dpert = dimensionalise(pert, u.km)
+dpert = 300 * u.km #dimensionalise(pert, u.km)
 
 backarc_y1 = -0.*nd(backarc_dy)/backarc_layers
 backarc_y2 = -1.*nd(backarc_dy)/backarc_layers
@@ -325,7 +356,7 @@ Fig.script(camera)
 # Render in notebook
 # Fig.show()
 
-# Fig.window()
+Fig.window()
 
 # %%
 #assigning properties (density, viscosity, etc) to shapes.
@@ -341,6 +372,7 @@ for i in Model.materials:
             c1 = j["cohesion2"] if j.get('cohesion2') else c0
             if c0 is not None:
                 i.plasticity = GEO.VonMises(cohesion = c0, cohesionAfterSoftening = c1)
+                                       # TODO epsilon1=0., epsilon2=0.1
 
 # %% [markdown]
 # **Eclogite transition**
@@ -408,16 +440,20 @@ def tracer_coords(name, minX, maxX, minZ, maxZ):
 
 # %%
 # Over-riding plate particles
-tracer_coords("orp", nd(backarc_xStart),nd(slab_xStart),
-              0., nd(boxWidth))
-tracer_coords("slab",nd(slab_xStart),nd(bouyStrip_xStart),
-              0., nd(slab_dz))
-tracer_coords("cont", nd(craton_xStart), nd(backarc_xStart),
-              0., nd(boxWidth))
-tracer_coords("arc", nd(ribbon_xStart), nd(ribbon_xStart+ribbon_dx),
-              nd(ribbon_dz), nd(boxWidth))
-tracer_coords("buoy", nd(bouyStrip_xStart), nd(slab_xStart+slab_dx),
-              0., nd(slab_dz))
+
+# JG 30Apr
+# badly defined as they rely on units definition. Must fix
+
+# tracer_coords("orp", nd(backarc_xStart),nd(slab_xStart),
+#               0., nd(boxWidth))
+# tracer_coords("slab",nd(slab_xStart),nd(bouyStrip_xStart),
+#               0., nd(slab_dz))
+# tracer_coords("cont", nd(craton_xStart), nd(backarc_xStart),
+#               0., nd(boxWidth))
+# tracer_coords("arc", nd(ribbon_xStart), nd(ribbon_xStart+ribbon_dx),
+#               nd(ribbon_dz), nd(boxWidth))
+# tracer_coords("buoy", nd(bouyStrip_xStart), nd(slab_xStart+slab_dx),
+#               0., nd(slab_dz))
 
 # %%
 on_grid_x = fn.math.sin(10.*np.pi*Model.x) > 0.9
@@ -470,8 +506,8 @@ FigTracers.script(camera)
 # FigTracers.show()
 
 # %%
-Model.minViscosity = dimensionalise(1., u.Pa * u.sec)
-Model.maxViscosity = dimensionalise(1e5, u.Pa * u.sec)
+# Model.minViscosity = 1e18, u.Pa * u.sec
+# Model.maxViscosity = 1e25, u.Pa * u.sec
 
 # %%
 Model.set_velocityBCs( left=[0.,None,None], right=[0.,None,None],
@@ -486,10 +522,10 @@ Model.init_model()
 Model._phaseChangeFn()
 
 # %%
-# figViscosity = vis.Figure(figsize=figsize, axis=True)
-# figViscosity.append( vis.oGEO.rcParams[“default.outputs”]bjects.Points(swarm, viscosityFn, colours='dem1', fn_size=2., logScale=True) )
-# if dim == 3:
-#     figViscosity.script(camera)
+figViscosity = vis.Figure(figsize=figsize, axis=True)
+figViscosity.append( vis.objects.Points(Model.swarm, Model.viscosityField, colours='dem1', fn_size=2., logScale=True) )
+if dim == 3:
+    figViscosity.script(camera)
 # figViscosity.show()
 
 # %%
@@ -518,12 +554,13 @@ def post_solve_hook():
     
     if rank == 0:
         with open(fout,'a') as f:
-             f.write(f"{step}\t{time:5e}\t{vrms:5e}")
+             f.write(f"{step}\t{time:5e}\t{vrms:5e}\n")
                 
-# DEBUG CODE
-#     subMesh = Model.mesh.subMesh
-#     jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
-#     jrho.data[:] = Model._densityFn.evaluate(subMesh)
+    # DEBUG CODE
+    subMesh = Model.mesh.subMesh
+    jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
+    jrho.data[:] = Model._densityFn.evaluate(subMesh)
+    jsig.data[:] = jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
         
 Model.post_solve_functions["Measurements"] = post_solve_hook
 
@@ -550,18 +587,49 @@ Model.post_solve_functions["Measurements"] = post_solve_hook
 # solver.print_petsc_options()
 
 # %%
+if dim == 2: Model.solver.set_inner_method("mumps")
+Model.solver.options.scr.ksp_rtol = 1e-6 # small tolerance is good in 2D, not sure if too tight for 3D
+
+# %%
+# GEO.rcParams["initial.nonlinear.tolerance"] = 4e-2
+
+# %%
+Fig = vis.Figure(figsize=(1200,400))
+Fig.Points(Model.swarm, fn_colour=2.*Model.viscosityField*Model.strainRate_2ndInvariant, colours='dem1', logScale=True,fn_size=1.0)
+# Fig.show()
+
+# %%
+Fig = vis.Figure(figsize=(1200,400))
+Fig.Points(Model.swarm, fn_colour=Model._stressField, logScale=True, colours='dem1', fn_size=1.0)
+# Fig.show()
+
+# %%
+Fig = vis.Figure(figsize=(1200,400))
+Fig.Points(Model.swarm, fn_colour=Model._viscosityField, logScale=True, colours='dem1', fn_size=1.0)
+# Fig.show()
+
+# %%
+# Model.strainRate_2ndInvariant.evaluate(Model.swarm)
+
+# %%
 ## debugging code to generate initial fields for viscosity and density ##
 # fields output used to analyse initial setup
 
-# jeta = Model.add_submesh_field(name="cell_vis", nodeDofCount=1)
-# jrho = Model.add_submesh_field(name="cell_rho", nodeDofCount=1)
+jeta = Model.add_submesh_field(name="cell_vis", nodeDofCount=1)
+jrho = Model.add_submesh_field(name="cell_rho", nodeDofCount=1)
+jsig = Model.add_submesh_field(name="cell_sig", nodeDofCount=1)
 
-# GEO.rcParams["default.outputs"].append("cell_vis")
-# GEO.rcParams["default.outputs"].append("cell_rho")
+GEO.rcParams["default.outputs"].append("cell_vis")
+GEO.rcParams["default.outputs"].append("cell_rho")
+GEO.rcParams["default.outputs"].append("cell_sig")
 
-# subMesh = Model.mesh.subMesh
-# jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
-# jrho.data[:] = Model._densityFn.evaluate(subMesh)
+subMesh = Model.mesh.subMesh
+jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
+jrho.data[:] = Model._densityFn.evaluate(subMesh)
+jsig.data[:] = 2. * jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
 
 # %%
-Model.run_for(nstep=10, checkpoint_interval=1)
+Model.run_for(nstep=100, checkpoint_interval=1)
+
+# %%
+# Model.run_for(nstep=5, checkpoint_interval=1)
