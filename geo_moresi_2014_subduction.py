@@ -356,7 +356,7 @@ Fig.script(camera)
 # Render in notebook
 # Fig.show()
 
-Fig.window()
+#Fig.window()
 
 # %%
 #assigning properties (density, viscosity, etc) to shapes.
@@ -374,6 +374,7 @@ for i in Model.materials:
                 i.plasticity = GEO.VonMises(cohesion = c0, cohesionAfterSoftening = c1)
                                        # TODO epsilon1=0., epsilon2=0.1
 
+if rank == 0: print("Assining material properties...")
 # %% [markdown]
 # **Eclogite transition**
 #
@@ -515,6 +516,7 @@ Model.set_velocityBCs( left=[0.,None,None], right=[0.,None,None],
                        front=[None,None,0.], back=[None,None,0.])
 
 # %%
+if rank == 0: print("Calling init_model()...")
 Model.init_model()
 
 # %%
@@ -557,10 +559,10 @@ def post_solve_hook():
              f.write(f"{step}\t{time:5e}\t{vrms:5e}\n")
                 
     # DEBUG CODE
-    subMesh = Model.mesh.subMesh
-    jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
-    jrho.data[:] = Model._densityFn.evaluate(subMesh)
-    jsig.data[:] = jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
+    #subMesh = Model.mesh.subMesh
+    #jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
+    #jrho.data[:] = Model._densityFn.evaluate(subMesh)
+    #jsig.data[:] = jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
         
 Model.post_solve_functions["Measurements"] = post_solve_hook
 
@@ -615,21 +617,23 @@ Fig.Points(Model.swarm, fn_colour=Model._viscosityField, logScale=True, colours=
 ## debugging code to generate initial fields for viscosity and density ##
 # fields output used to analyse initial setup
 
-jeta = Model.add_submesh_field(name="cell_vis", nodeDofCount=1)
-jrho = Model.add_submesh_field(name="cell_rho", nodeDofCount=1)
-jsig = Model.add_submesh_field(name="cell_sig", nodeDofCount=1)
-
-GEO.rcParams["default.outputs"].append("cell_vis")
-GEO.rcParams["default.outputs"].append("cell_rho")
-GEO.rcParams["default.outputs"].append("cell_sig")
-
-subMesh = Model.mesh.subMesh
-jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
-jrho.data[:] = Model._densityFn.evaluate(subMesh)
-jsig.data[:] = 2. * jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
-
-# %%
-Model.run_for(nstep=100, checkpoint_interval=1)
+#jeta = Model.add_submesh_field(name="cell_vis", nodeDofCount=1)
+#jrho = Model.add_submesh_field(name="cell_rho", nodeDofCount=1)
+#jsig = Model.add_submesh_field(name="cell_sig", nodeDofCount=1)
+#
+#GEO.rcParams["default.outputs"].append("cell_vis")
+#GEO.rcParams["default.outputs"].append("cell_rho")
+#GEO.rcParams["default.outputs"].append("cell_sig")
+#
+#subMesh = Model.mesh.subMesh
+#jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
+#jrho.data[:] = Model._densityFn.evaluate(subMesh)
+#jsig.data[:] = 2. * jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
 
 # %%
-# Model.run_for(nstep=5, checkpoint_interval=1)
+Model.run_for(nstep=100, checkpoint_interval=5)
+# To restart the model
+#Model.run_for(nstep=200, checkpoint_interval=5, restartStep=-1)
+
+# %%
+#Model.run_for(nstep=5, checkpoint_interval=1)
