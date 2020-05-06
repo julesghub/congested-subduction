@@ -547,12 +547,12 @@ Fig.script(camera)
 fout = outputPath+'/FrequentOutput.dat'
 if rank == 0:
     with open(fout,'a') as f:
-         f.write('step\t time(Myr)\t Vrms(cm/yr)\n')
+         f.write('#step\t time(Myr)\t Vrms(cm/yr)\n')
             
 def post_solve_hook():
     vrms = Model.stokes_SLE.velocity_rms()
     step = Model.step
-    time = Model.time.to(u.megayear)
+    time = Model.time.m_as(u.megayear)
     
     if rank == 0:
         with open(fout,'a') as f:
