@@ -19,18 +19,14 @@ um = {
     'name'     : 'Model', # really the 'upper mantle'
     'index'    : 0,
     'viscosity': 1. * u.pascal * u.second * 1e20, 
-    'density'  : abs_density,
-#     'cohesion' : 1e3 * u.megapascal,
-#     'cohesion2': 1e3 * u.megapascal,
+    'density'  : abs_density
 }
 
 lm = {
     'name'     : 'lower mantle',
     'index'    : 1,
     'viscosity': 100. * u.pascal * u.second * 1e20, 
-    'density'  : abs_density,
-#     'cohesion' : 1e3 * u.megapascal,
-#     'cohesion2': 1e3 * u.megapascal,
+    'density'  : abs_density
 }
 
 
@@ -39,7 +35,7 @@ subplate1 = {
     'name'     : 'oceanic plate 1',
     'index'    : 3,
     'viscosity': 1.000e+25 * u.pascal * u.second, 
-    'density'  : 3.22571e3 * u.kg / u.m**3,
+    'density'  : 3.22255e3 * u.kg / u.m**3,
     'cohesion' : 1.250e+01 * u.megapascal,
     'cohesion2': 6.250e+00 * u.megapascal,        
 }
@@ -57,7 +53,7 @@ subplate2 = {
     'name'     : 'oceanic plate 2',
     'index'    : 4,
     'viscosity':  1.000e+25 * u.pascal * u.second, 
-    'density'  :  3.35648e3 * u.kg / u.m**3,
+    'density'  :  3.34755e3 * u.kg / u.m**3,
     'cohesion' :  6.744e+01 * u.megapascal,
     'cohesion2':  3.372e+01 * u.megapascal,      
 }
@@ -66,8 +62,8 @@ subplate2 = {
 subplate3 = {
     'name'     : 'oceanic plate 3',
     'index'    : 5,
-    'viscosity': 7.09362e+24 * u.pascal * u.sec, 
-    'density'  : 3.33075e+3 * u.kg / u.m**3,
+    'viscosity': 1.92964e+24 * u.pascal * u.sec, 
+    'density'  : 3.31851e3 * u.kg / u.m**3,
     'cohesion' : 1.21324e+02 * u.megapascal,
     'cohesion2': 6.06619e+01 * u.megapascal,      
 }
@@ -75,11 +71,9 @@ subplate3 = {
 subplate4 = {
     'name'     : 'oceanic plate 4',
     'index'    : 6,
-    'viscosity': 1.65664e+23 * u.pascal * u.second,
-    'density'  : 3.30973e+03 * u.kg / u.m**3,
-    # no yielding
-#     'cohesion' : 1.000e+03 * u.megapascal,
-#     'cohesion2': 1.000e+03 * u.megapascal,      
+    'viscosity': 9.64084e+21 * u.pascal * u.second,
+    'density'  : 3.29701e+03 * u.kg / u.m**3,
+    # no yielding    
 }
 
 # +
@@ -87,26 +81,26 @@ subplate4 = {
 craton1 = {
     'name'     : 'craton1',
     'index'    : 11,
-    'viscosity':  1.00000e+25 * u.pascal * u.second,
+    'viscosity': 5.00000e+23 * u.pascal * u.second,
     'density'  : 2.98662e+03  * u.kg / u.m**3,
-    'cohesion' :  1.3000e+02 * u.megapascal,
-    'cohesion2':  6.500e+01 * u.megapascal,
+    'cohesion' : 1.3000e+02 * u.megapascal,
+    'cohesion2': 6.500e+01 * u.megapascal,
 }
 
 craton2 = {
     'name'     : 'craton2',
     'index'    : 12,
-    'viscosity': 1.48030e+24 * u.pascal * u.second,
-    'density'  :  3.30100e+03 * u.kilogram / u.m**3,
-    'cohesion' :  2.93355e+02 * u.megapascal,
-    'cohesion2':  1.46677e+02 * u.megapascal,}
+    'viscosity': 1.67484e+23 * u.pascal * u.second,
+    'density'  : 3.30100e+03 * u.kilogram / u.m**3,
+    'cohesion' : 2.91998e+02 * u.megapascal,
+    'cohesion2': 1.45999e+02 * u.megapascal,}
 # -
 
 # transitional lithosphere
 trans1 = {
     'name'     : 'trans1',
     'index'    : 9,
-    'viscosity': 1.00000e+25 * u.pascal * u.second, 
+    'viscosity': 5.00000e+23 * u.pascal * u.second, 
     'density'  : 3.00529e+03 * u.kg / u.m**3,
     'cohesion' : 4.000e+01 * u.megapascal,
     'cohesion2': 2.000e+01 * u.megapascal,
@@ -114,25 +108,25 @@ trans1 = {
 trans2 = {
     'name'     : 'trans2',
     'index'    : 10,
-    'viscosity': 1.24254e+24 * u.pascal * u.second,
+    'viscosity': 1.50142e+23 * u.pascal * u.second,
     'density'  : 3.30122e+03 * u.kg / u.m**3,
-    'cohesion' :  1.500e+02 * u.megapascal,
-    'cohesion2':  7.500e+01 * u.megapascal,
+    'cohesion' : 1.500e+02 * u.megapascal,
+    'cohesion2': 7.500e+01 * u.megapascal,
 }
 
 # weak back arc material properties
 backArc1 = {
     'name'     : 'backArc1',
     'index'    : 7,
-    'viscosity':  8.90421e+24 * u.Pa * u.sec,   
+    'viscosity': 4.97782e+23 * u.Pa * u.sec,   
     'density'  : 3.10862e+03 * u.kg/u.m**3,
-    'cohesion' :  1.250e+01 * u.megapascal,   
-    'cohesion2':  6.250e+00 * u.megapascal,
+    'cohesion' : 1.250e+01 * u.megapascal,   
+    'cohesion2': 6.250e+00 * u.megapascal,
 }
 backArc2 = {
     'name'     : 'backArc2',
     'index'    : 8,
-    'viscosity': 1.80630e+22 * u.pascal * u.second,
+    'viscosity': 1.71934e+22 * u.pascal * u.second,
     'density'  : 3.28283e+03 * u.kg/u.m**3,
     'cohesion' : 2.500e+01 * u.megapascal,   
     'cohesion2': 1.250e+01 * u.megapascal,
@@ -142,14 +136,14 @@ backArc2 = {
 ribbon = {
     'name'     : 'ribbon',
     'index'    : 13,
-    'viscosity':  1e25 * u.pascal * u.second,
+    'viscosity': 1e25 * u.pascal * u.second,
     'density'  : 2.98662e+03  * u.kg / u.m**3,
 }
 
 buoyStrip = {
     'name'     : 'buoyStrip',
     'index'    : 14,
-    'viscosity':  1e5 * u.pascal * u.second * 1e20,    # strong 
+    'viscosity': 1e25 * u.pascal * u.second,    # strong 
     'density'  : 2.98662e+03  * u.kg / u.m**3,         # assume cratonic density
 }
 
