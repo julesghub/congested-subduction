@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -P q97
-#PBS -lstorage=scratch/q97
+#PBS -l storage=scratch/q97
 #PBS -q normal
 #PBS -l walltime=05:00:00
 #PBS -l mem=8GB
