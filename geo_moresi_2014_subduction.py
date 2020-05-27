@@ -114,6 +114,7 @@ rank    = GEO.rank
 # %%
 #nEls = (256,96,96)
 nEls = (128,48,48)
+scr_rtol = 1e-6
 
 #nEls = (128, 48)
 #nEls = (256, 96)
@@ -122,7 +123,7 @@ dim = len(nEls)
 
 checkpoint_restart = False
 outputPath = "scalingoutput-" if use_scaling else "output-"
-outputPath = outputPath + "scr_1e-5-"
+outputPath = outputPath + "-" + str(scr_rtol) + "-"
 outputPath = outputPath + (f"{nEls[0]}x{nEls[1]}x{nEls[2]}" if dim == 3 else f"{nEls[0]}x{nEls[1]}")
 outputPath = outputPath + f"_np{GEO.size}"
 
@@ -593,12 +594,12 @@ solver = Model.solver
 #solver.options.main.list()
 
 # Schur complement solver options
-solver.options.scr.ksp_rtol = 1.0e-6 
+solver.options.scr.ksp_rtol = scr_rtol 
 solver.options.scr.ksp_type = "fgmres"
 #solver.options.main.list()
 
 # Inner solve (velocity), A11 options
-solver.options.A11.ksp_rtol = 1.0e-7
+solver.options.A11.ksp_rtol = 1e-1 * scr_rtol
 solver.options.A11.ksp_type = "fgmres"
 solver.options.A11.list()
 ## OLD SOLVER settings end ##
