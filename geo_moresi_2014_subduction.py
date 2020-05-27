@@ -38,6 +38,8 @@ from UWGeodynamics.scaling import dimensionalise
 from UWGeodynamics.scaling import non_dimensionalise as nd
 from underworld import function as fn
 
+#GEO.rcParams['nonlinear.max.iterations'] = 20
+#GEO.rcParams['initial.nonlinear.max.iterations'] = 20
 # %%
 # 3rd party python modules
 import math
@@ -56,17 +58,17 @@ boxLength = 6000.0 * u.kilometer
 boxHeight =  800.0 * u.kilometer
 boxWidth  = 3000.0 * u.kilometer
 
-dRho =   80. * u.kilogram / u.meter**3 # matprop.ref_density
-g    =   10. * u.meter / u.second**2   # modprop.gravity
-H    = 1000. * u.kilometer #  modprop.boxHeight
+dRho =   2900. * u.kilogram / u.meter**3 # matprop.ref_density
+
+use_scaling = False
 
 # lithostatic pressure for mass-time-length
-ref_stress = dRho * g * H
+ref_stress = dRho * gravity * boxHeight
 # viscosity of upper mante for mass-time-length
 ref_viscosity = 1e20 * u.pascal * u.seconds
 
 ref_time        = ref_viscosity/ref_stress
-ref_length      = H
+ref_length      = boxHeight
 ref_mass        = (ref_viscosity*ref_length*ref_time).to_base_units()
 ref_temperature = Tint - Tsurf
 
@@ -75,10 +77,12 @@ KM = ref_mass
 Kt = ref_time
 KT = ref_temperature
 
-# KL = 1 * u.m  
-# KM = 1 * u.kg         
-# Kt = 1 * u.sec
-# KT = 1 * u.degK
+if use_scaling:
+    # Disable internal scaling when using relrho_geo_material_properties.py
+    KL = 1. * u.meter       
+    KM = 1. * u.kilogram        
+    Kt = 1. * u.second
+    KT = 1. * u.degK
 
 scaling_coefficients = GEO.scaling.get_coefficients()
 
@@ -87,8 +91,10 @@ scaling_coefficients["[time]"]   = Kt.to_base_units()
 scaling_coefficients["[mass]"]   = KM.to_base_units()
 scaling_coefficients["[temperature]"]   = KT.to_base_units()
 
-# import relrho_geo_material_properties as matprop
-import absrho_geo_material_properties as matprop
+if use_scaling:
+    import relrho_geo_material_properties as matprop
+else:
+    import absrho_geo_material_properties as matprop
 
 # %%
 # shortcuts for parallel wrappers
@@ -106,16 +112,19 @@ rank    = GEO.rank
 #
 
 # %%
-# nEls = (256,96.96)
-# nEls = (128,48,48)
+#nEls = (256,96,96)
+nEls = (128,48,48)
 
-# nEls = (128, 48)
-nEls = (256, 96)
+#nEls = (128, 48)
+#nEls = (256, 96)
 
 dim = len(nEls)
 
 checkpoint_restart = False
-outputPath = f"output-{nEls[0]}x{nEls[1]}x{nEls[2]}" if dim == 3 else f"output-{nEls[0]}x{nEls[1]}"
+outputPath = "scalingoutput-" if use_scaling else "output-"
+outputPath = outputPath + "scr_1e-5-"
+outputPath = outputPath + (f"{nEls[0]}x{nEls[1]}x{nEls[2]}" if dim == 3 else f"{nEls[0]}x{nEls[1]}")
+outputPath = outputPath + f"_np{GEO.size}"
 
 # %%
 outputPath = os.path.join(os.path.abspath("."), outputPath)
@@ -154,7 +163,14 @@ Model = GEO.Model(elementRes = nEls,
                   outputDir  = outputPath)
 
 # %%
-Model.defaultStrainRate = 1e-18 / u.second
+if use_scaling:
+    Model.defaultStrainRate = 1e-18 / u.second
+    Model.minViscosity = 1e-2 * u.Pa * u.sec
+    Model.maxViscosity = 1e5  * u.Pa * u.sec
+else:
+    Model.defaultStrainRate = 1e-18 / u.second
+    Model.minViscosity = 1e18 * u.Pa * u.sec
+    Model.maxViscosity = 1e25  * u.Pa * u.sec
 
 # %%
 resolution = [ abs(Model.maxCoord[d]-Model.minCoord[d])/Model.elementRes[d] for d in range(Model.mesh.dim) ]
@@ -445,6 +461,7 @@ def tracer_coords(name, minX, maxX, minZ, maxZ):
 # JG 30Apr
 # badly defined as they rely on units definition. Must fix
 
+# TODO Fix the scaling issue here, when scaling is one, error here
 # tracer_coords("orp", nd(backarc_xStart),nd(slab_xStart),
 #               0., nd(boxWidth))
 # tracer_coords("slab",nd(slab_xStart),nd(bouyStrip_xStart),
@@ -454,66 +471,62 @@ def tracer_coords(name, minX, maxX, minZ, maxZ):
 # tracer_coords("arc", nd(ribbon_xStart), nd(ribbon_xStart+ribbon_dx),
 #               nd(ribbon_dz), nd(boxWidth))
 # tracer_coords("buoy", nd(bouyStrip_xStart), nd(slab_xStart+slab_dx),
-#               0., nd(slab_dz))
+#              0., nd(slab_dz))
 
-# %%
-on_grid_x = fn.math.sin(10.*np.pi*Model.x) > 0.9
-on_grid_y = fn.math.sin(10.*np.pi*Model.z) > 0.9
-
-grid_conditions = [  
-                    ( on_grid_x, 1.),
-                    ( on_grid_y, 1.),
-                    ( True, -1.),
-                  ]
-
-if dim == 3:
-    for t in Model.passive_tracers.items():
-        new_var = t[1].add_variable(dataType="float", count=1)
-        new_var.data[:] = fn.branching.conditional(grid_conditions).evaluate(t[1])
-
-# %%
-Model.passive_tracers.keys()
-
-# %%
-FigTracers = vis.Figure(figsize=(1200,400))
-
-# Show single colour
-# Fig.Points(Model.swarm, colour='gray', opacity=0.5, discrete=True, 
-#            fn_mask=materialFilter, fn_size=2.0, colourBar=False)
-
-# Show all glory
-FigTracers.Points(Model.swarm, fn_colour=Model.materialField, 
-           fn_mask=materialFilter, opacity=0.5, fn_size=2.0)
-
-def get_show_tracer(name, colours):
-    t = Model.passive_tracers.get(name)
-    if not t: raise RuntimeError("ERROR: fine tracer called ", name)
-    
-    FigTracers.Points(t, t.variables[-1],fn_size=2.,
-                      colours=colours,opacity=0.5,colourBar=False)
-    
-if dim == 3:
-    
-    get_show_tracer(name='orp', colours="#22BBBB #335588")
-    get_show_tracer(name='slab', colours="Gray40 Goldenrod")
-    get_show_tracer(name='cont', colours="#335588 #22BBBB")
-    get_show_tracer(name='arc', colours="Goldenrod Grey41")
-    get_show_tracer(name='buoy', colours="#335588 #335588")
+# # %%
+# on_grid_x = fn.math.sin(10.*np.pi*Model.x) > 0.9
+# on_grid_y = fn.math.sin(10.*np.pi*Model.z) > 0.9
+# 
+# grid_conditions = [  
+#                     ( on_grid_x, 1.),
+#                     ( on_grid_y, 1.),
+#                     ( True, -1.),
+#                   ]
+# 
+# #if dim == 3:
+# #    for t in Model.passive_tracers.items():
+# #        new_var = t[1].add_variable(dataType="float", count=1)
+# #        new_var.data[:] = fn.branching.conditional(grid_conditions).evaluate(t[1])
+# 
+# # %%
+# Model.passive_tracers.keys()
+# 
+# # %%
+# FigTracers = vis.Figure(figsize=(1200,400))
+# 
+# # Show single colour
+# # Fig.Points(Model.swarm, colour='gray', opacity=0.5, discrete=True, 
+# #            fn_mask=materialFilter, fn_size=2.0, colourBar=False)
+# 
+# # Show all glory
+# FigTracers.Points(Model.swarm, fn_colour=Model.materialField, 
+#            fn_mask=materialFilter, opacity=0.5, fn_size=2.0)
+# 
+# def get_show_tracer(name, colours):
+#     t = Model.passive_tracers.get(name)
+#     if not t: raise RuntimeError("ERROR: fine tracer called ", name)
+#     
+#     FigTracers.Points(t, t.variables[-1],fn_size=2.,
+#                       colours=colours,opacity=0.5,colourBar=False)
+#     
+# if dim == 3:
+#     
+#     get_show_tracer(name='orp', colours="#22BBBB #335588")
+#     get_show_tracer(name='slab', colours="Gray40 Goldenrod")
+#     get_show_tracer(name='cont', colours="#335588 #22BBBB")
+#     get_show_tracer(name='arc', colours="Goldenrod Grey41")
+#     get_show_tracer(name='buoy', colours="#335588 #335588")
 
 # Rotate camera angle
-FigTracers.script(camera)
+# FigTracers.script(camera)
 
 # Render in notebook
 # FigTracers.show()
 
 # %%
-# Model.minViscosity = 1e18, u.Pa * u.sec
-# Model.maxViscosity = 1e25, u.Pa * u.sec
-
-# %%
 Model.set_velocityBCs( left=[0.,None,None], right=[0.,None,None],
-                       bottom=[None,0.,None], top=[None,0.,None],
-                       front=[None,None,0.], back=[None,None,0.])
+                       front=[None,0.,None], back=[None,0.,None],
+                       bottom=[None,None,0.], top=[None,None,0.])
 
 # %%
 if rank == 0: print("Calling init_model()...")
@@ -568,29 +581,39 @@ Model.post_solve_functions["Measurements"] = post_solve_hook
 
 # %%
 ## We can test different solvers by uncommentting this section
-# solver = Model.solver
-# # System level solver options
+solver = Model.solver
+
+## OLD SOLVER settings ##
+# System level solver options
 # solver.options.main.Q22_pc_type = "uwscale"
 # solver.options.main.ksp_k2_type = "GMG"
 # solver.options.main.ksp_type    = "bsscr"
 # solver.options.main.pc_type     = "none"
 # solver.options.main.penalty     = 50.
-# #solver.options.main.list()
+#solver.options.main.list()
 
-# # Schur complement solver options
-# solver.options.scr.ksp_rtol = 1.0e-3 
-# solver.options.scr.ksp_type = "fgmres"
-# #solver.options.main.list()
+# Schur complement solver options
+solver.options.scr.ksp_rtol = 1.0e-6 
+solver.options.scr.ksp_type = "fgmres"
+#solver.options.main.list()
 
-# # Inner solve (velocity), A11 options
-# solver.options.A11.ksp_rtol = 1.0e-4
-# solver.options.A11.ksp_type = "fgmres"
-# #solver.options.A11.list()
-# solver.print_petsc_options()
+# Inner solve (velocity), A11 options
+solver.options.A11.ksp_rtol = 1.0e-7
+solver.options.A11.ksp_type = "fgmres"
+solver.options.A11.list()
+## OLD SOLVER settings end ##
+
 
 # %%
-if dim == 2: Model.solver.set_inner_method("mumps")
-Model.solver.options.scr.ksp_rtol = 1e-6 # small tolerance is good in 2D, not sure if too tight for 3D
+# if dim == 2: 
+#     solver.set_inner_method("mumps")
+#     solver.options.scr.ksp_rtol = 1e-6 # small tolerance is good in 2D, not sure if too tight for 3D
+# else:
+#     # decrease the standard tolerances
+#     solver.options.A11.ksp_rtol = 1.0e-5
+#     solver.options.scr.ksp_rtol = 1.0e-6 
+
+# solver.print_petsc_options()
 
 # %%
 # GEO.rcParams["initial.nonlinear.tolerance"] = 4e-2
@@ -631,7 +654,7 @@ Fig.Points(Model.swarm, fn_colour=Model._viscosityField, logScale=True, colours=
 #jsig.data[:] = 2. * jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
 
 # %%
-Model.run_for(nstep=100, checkpoint_interval=5)
+Model.run_for(nstep=600, checkpoint_interval=15)
 # To restart the model
 #Model.run_for(nstep=200, checkpoint_interval=5, restartStep=-1)
 
