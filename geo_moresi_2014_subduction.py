@@ -25,10 +25,6 @@
 # **References**
 #
 # Moresi, L., P. G. Betts, M. S. Miller, and R. A. Cayley. 2014. “Dynamics of Continental Accretion.” Nature 508 (7495): 245–48. [doi:10.1038/nature13033](https://www.nature.com/articles/nature13033)
-
-# %%
-from UWGeodynamics import visualisation as vis
-
 # %%
 # core UW bit
 import UWGeodynamics as GEO
@@ -113,7 +109,7 @@ rank    = GEO.rank
 
 # %%
 #nEls = (256,96,96)
-nEls = (128,48,48)
+nEls = (128,48)
 scr_rtol = 1e-6
 
 #nEls = (128, 48)
@@ -312,7 +308,7 @@ rib_shape = GEO.shapes.Box(top=0*u.km, bottom=-50*u.km,
 
 if dim == 3:
     # angle we want the ribbon rotated, can be +ve or -ve
-    ang = 0
+    ang = 20
     rad = np.radians(ang)
 
     # calculated associated half space normals
@@ -391,7 +387,7 @@ for i in Model.materials:
                 i.plasticity = GEO.VonMises(cohesion = c0, cohesionAfterSoftening = c1)
                                        # TODO epsilon1=0., epsilon2=0.1
 
-if rank == 0: print("Assining material properties...")
+if rank == 0: print("Assigning material properties...")
 # %% [markdown]
 # **Eclogite transition**
 #
@@ -407,6 +403,23 @@ op1_fin.phase_changes = GEO.PhaseChange((Model.y < nd(-150.*u.kilometers)),
 #                                           op_change.index)
 # op4_fin.phase_changes = GEO.PhaseChange((Model.y < nd(-150.*u.kilometers)),
 #                                           op_change.index)
+
+if rank == 0:
+    print("yes")
+    store = vis.Store("store2D")
+    print("initialised store")
+    print("making figure")
+    figure_one = vis.Figure(store, figsize=(1200,400))
+    print("made figure")
+    print("appending")
+    figure_one.append(Fig.Points(Model.swarm, fn_colour=Model.materialField, fn_mask=materialFilter, opacity=0.5, fn_size=2.0))
+    print("appended")
+    print("setting step")
+    store.step = 0
+    print("step set")
+    print("saving fig")
+    figure_one.save("store")
+    print("saved initial")
 
 # %%
 figsize=(1000,300)
@@ -571,7 +584,10 @@ def post_solve_hook():
     if rank == 0:
         with open(fout,'a') as f:
              f.write(f"{step}\t{time:5e}\t{vrms:5e}\n")
-                
+
+        store.step += 1
+        figure_one.save()
+        print("saved one more timestep")
     # DEBUG CODE
     #subMesh = Model.mesh.subMesh
     #jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
@@ -604,15 +620,13 @@ solver.options.A11.ksp_type = "fgmres"
 solver.options.A11.list()
 ## OLD SOLVER settings end ##
 
-
 # %%
-# if dim == 2: 
-#     solver.set_inner_method("mumps")
-#     solver.options.scr.ksp_rtol = 1e-6 # small tolerance is good in 2D, not sure if too tight for 3D
-# else:
-#     # decrease the standard tolerances
-#     solver.options.A11.ksp_rtol = 1.0e-5
-#     solver.options.scr.ksp_rtol = 1.0e-6 
+#if dim == 2: 
+#    solver.set_inner_method("mumps")
+#    solver.options.scr.ksp_rtol = 1e-6 # small tolerance is good in 2D, not sure if too tight for 3D
+#else:
+#    solver.options.A11.ksp_rtol = 1.0e-5
+#    solver.options.scr.ksp_rtol = 1.0e-6 
 
 # solver.print_petsc_options()
 
@@ -635,29 +649,5 @@ Fig.Points(Model.swarm, fn_colour=Model._viscosityField, logScale=True, colours=
 # Fig.show()
 
 # %%
-# Model.strainRate_2ndInvariant.evaluate(Model.swarm)
+Model.run_for(nstep=10, checkpoint_interval=1)
 
-# %%
-## debugging code to generate initial fields for viscosity and density ##
-# fields output used to analyse initial setup
-
-#jeta = Model.add_submesh_field(name="cell_vis", nodeDofCount=1)
-#jrho = Model.add_submesh_field(name="cell_rho", nodeDofCount=1)
-#jsig = Model.add_submesh_field(name="cell_sig", nodeDofCount=1)
-#
-#GEO.rcParams["default.outputs"].append("cell_vis")
-#GEO.rcParams["default.outputs"].append("cell_rho")
-#GEO.rcParams["default.outputs"].append("cell_sig")
-#
-#subMesh = Model.mesh.subMesh
-#jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
-#jrho.data[:] = Model._densityFn.evaluate(subMesh)
-#jsig.data[:] = 2. * jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
-
-# %%
-Model.run_for(nstep=600, checkpoint_interval=15)
-# To restart the model
-#Model.run_for(nstep=200, checkpoint_interval=5, restartStep=-1)
-
-# %%
-#Model.run_for(nstep=5, checkpoint_interval=1)
