@@ -108,12 +108,13 @@ rank    = GEO.rank
 #
 
 # %%
-#nEls = (256,96,96)
-nEls = (128,48)
-scr_rtol = 1e-6
+# nEls = (256,96,96)
 
-#nEls = (128, 48)
-#nEls = (256, 96)
+scr_rtol = 1e-6
+nEls = (128,48,48)
+# nEls = (16,10,4)
+boxHeight = boxHeight/2.
+# nEls = (256, 96)
 
 dim = len(nEls)
 
@@ -337,6 +338,10 @@ added_material_list = [lm, op1_fin, op2_fin, op3_fin, op4_fin, ba1_fin, ba2_fin,
                        t2_fin, c1_fin, c2_fin, bs_fin, op_change, rib]
 
 # %%
+from underworld import visualisation as vis
+store = vis.Store(outputPath + "/subduction")
+
+# %%
 figsize=(1000,300)
 camera = ['zoom 100']#['rotate x 30']
 boundingBox=( minCoord, maxCoord )
@@ -350,7 +355,7 @@ materialFilter = Model.materialField > 0
 # swarmPlot = vis.objects.Points(swarm, materialIndex, materialFilter, colours='gray', opacity=0.5, fn_size=2., 
 #                                     discrete=True, colourBar=False, )
 
-Fig = vis.Figure(figsize=(1200,400))
+Fig = vis.Figure(store, figsize=(1200,400))
 
 # Show single colour
 # Fig.Points(Model.swarm, colour='gray', opacity=0.5, discrete=True, 
@@ -360,8 +365,8 @@ Fig = vis.Figure(figsize=(1200,400))
 Fig.Points(Model.swarm, fn_colour=Model.materialField, 
            fn_mask=materialFilter, opacity=0.5, fn_size=2.0)
 
-# Save image to disk
-# Fig.save("Figure_1.png")
+# # Save image to disk
+# Fig.save("foobar.png")
 
 # Rotate camera angle
 Fig.script(camera)
@@ -387,7 +392,7 @@ for i in Model.materials:
                 i.plasticity = GEO.VonMises(cohesion = c0, cohesionAfterSoftening = c1)
                                        # TODO epsilon1=0., epsilon2=0.1
 
-if rank == 0: print("Assigning material properties...")
+if rank == 0: print("Assinging material properties...")
 # %% [markdown]
 # **Eclogite transition**
 #
@@ -455,87 +460,84 @@ Fig.script(camera)
 # Fig.show()
 
 # %%
-# build 3D surface tracers, ie y=0. NOT available for 2D
-def tracer_coords(name, minX, maxX, minZ, maxZ):
+def build_tracer_swarm(name, minX, maxX, numX, y, minZ, maxZ, numZ):
+    # wrapper for `Model.add_passive_tracers()` which doesn't take dimensional values
     
-    xx = np.linspace(minX, maxX, max(1, int(maxX-minX))*100)
-    yy = np.zeros(1)
-    zz = np.linspace(minZ, maxZ, max(1, int(maxX-minX))*100)
+    minX = GEO.nd(minX) ; maxX = GEO.nd(maxX)
+    minZ = GEO.nd(minZ) ; maxZ = GEO.nd(maxZ)
+    
+    xx = np.linspace(minX, maxX, numX)
+    yy = np.array([GEO.nd(y)])
+    zz = np.linspace(minZ, maxZ, numZ)
 
     xx, yy, zz = np.meshgrid(xx,yy,zz)
         
     tracers = Model.add_passive_tracers(name,
                                         vertices  = [0.,0.,0.],
                                         centroids = [xx, yy, zz]) 
+    return tracers
 
 
 # %%
-# Over-riding plate particles
+# # build 2 tracer swarms, one on the surface, and one 25 km down
 
-# JG 30Apr
-# badly defined as they rely on units definition. Must fix
+tracers = build_tracer_swarm("ba_surface",
+                             backarc_xStart, backarc_xStart+backarc_dx, int(np.ceil(backarc_dx/resolution[0])),
+                             0, 
+                             Model.minCoord[2]+resolution[2]/2,Model.maxCoord[2]-resolution[2]/2, Model.elementRes[2]-1)
+tracers.add_tracked_field(Model.strainRate, "sr_tensor", units=u.sec**-1, dataType="double", count=6)
 
-# TODO Fix the scaling issue here, when scaling is one, error here
-# tracer_coords("orp", nd(backarc_xStart),nd(slab_xStart),
-#               0., nd(boxWidth))
-# tracer_coords("slab",nd(slab_xStart),nd(bouyStrip_xStart),
-#               0., nd(slab_dz))
-# tracer_coords("cont", nd(craton_xStart), nd(backarc_xStart),
-#               0., nd(boxWidth))
-# tracer_coords("arc", nd(ribbon_xStart), nd(ribbon_xStart+ribbon_dx),
-#               nd(ribbon_dz), nd(boxWidth))
-# tracer_coords("buoy", nd(bouyStrip_xStart), nd(slab_xStart+slab_dx),
-#              0., nd(slab_dz))
+y = -15*u.km
+tracers = build_tracer_swarm("ba_subsurf",
+                             backarc_xStart, backarc_xStart+backarc_dx+y, int(np.ceil(backarc_dx/resolution[0])),
+                             y, 
+                             Model.minCoord[2]+resolution[2]/2,Model.maxCoord[2]-resolution[2]/2, Model.elementRes[2]-1)
+tracers.add_tracked_field(Model.strainRate, "sr_tensor", units=u.sec**-1, dataType="double", count=6)# # build 2 tracer swarms, one on the surface, and one 25 km down
 
-# # %%
-# on_grid_x = fn.math.sin(10.*np.pi*Model.x) > 0.9
-# on_grid_y = fn.math.sin(10.*np.pi*Model.z) > 0.9
-# 
-# grid_conditions = [  
-#                     ( on_grid_x, 1.),
-#                     ( on_grid_y, 1.),
-#                     ( True, -1.),
-#                   ]
-# 
-# #if dim == 3:
-# #    for t in Model.passive_tracers.items():
-# #        new_var = t[1].add_variable(dataType="float", count=1)
-# #        new_var.data[:] = fn.branching.conditional(grid_conditions).evaluate(t[1])
-# 
-# # %%
-# Model.passive_tracers.keys()
-# 
-# # %%
-# FigTracers = vis.Figure(figsize=(1200,400))
-# 
-# # Show single colour
-# # Fig.Points(Model.swarm, colour='gray', opacity=0.5, discrete=True, 
-# #            fn_mask=materialFilter, fn_size=2.0, colourBar=False)
-# 
-# # Show all glory
+
+# %%
+FigTracers = vis.Figure(store, figsize=(1200,400))
+
+# Show single colour
+# Fig.Points(Model.swarm, colour='gray', opacity=0.5, discrete=True, 
+#            fn_mask=materialFilter, fn_size=2.0, colourBar=False)
+
+# Show all glory
 # FigTracers.Points(Model.swarm, fn_colour=Model.materialField, 
 #            fn_mask=materialFilter, opacity=0.5, fn_size=2.0)
-# 
-# def get_show_tracer(name, colours):
-#     t = Model.passive_tracers.get(name)
-#     if not t: raise RuntimeError("ERROR: fine tracer called ", name)
-#     
-#     FigTracers.Points(t, t.variables[-1],fn_size=2.,
-#                       colours=colours,opacity=0.5,colourBar=False)
-#     
-# if dim == 3:
-#     
-#     get_show_tracer(name='orp', colours="#22BBBB #335588")
-#     get_show_tracer(name='slab', colours="Gray40 Goldenrod")
-#     get_show_tracer(name='cont', colours="#335588 #22BBBB")
-#     get_show_tracer(name='arc', colours="Goldenrod Grey41")
-#     get_show_tracer(name='buoy', colours="#335588 #335588")
 
-# Rotate camera angle
-# FigTracers.script(camera)
+def get_show_tracer(name, colours):
+    t = Model.passive_tracers.get(name)
+    if not t: raise RuntimeError("ERROR: fine tracer called ", name)
+    
+    # t.variables[0] is the cell index, not of interest, only used to display in 'store'
+    FigTracers.Points(t, t.variables[0],fn_size=2.,
+                      colours=colours,opacity=0.5,colourBar=False)
+
+if dim == 3:
+
+        get_show_tracer(name="ba_surface", colours="#22BBBB")
+        get_show_tracer(name='ba_subsurf', colours="#335588")
+#         get_show_tracer(name='slab', colours="Gray40 Goldenrod")
+#         get_show_tracer(name='cont', colours="#335588 #22BBBB")
+#         get_show_tracer(name='arc', colours="Goldenrod Grey41")
+#         get_show_tracer(name='buoy', colours="#335588 #335588")
+
+def output_tracers(i):
+
+    store.step = i
+    # Rotate camera angle
+    FigTracers.script(camera)
+    
+    FigTracers.save('foobar.png')
 
 # Render in notebook
 # FigTracers.show()
+
+
+# %%
+Model.minViscosity = 1e18 * u.Pa * u.sec
+Model.maxViscosity = 1e25 * u.Pa * u.sec
 
 # %%
 Model.set_velocityBCs( left=[0.,None,None], right=[0.,None,None],
@@ -581,6 +583,8 @@ def post_solve_hook():
     step = Model.step
     time = Model.time.m_as(u.megayear)
     
+    if dim==3: output_tracers(step)
+    
     if rank == 0:
         with open(fout,'a') as f:
              f.write(f"{step}\t{time:5e}\t{vrms:5e}\n")
@@ -618,6 +622,7 @@ solver.options.scr.ksp_type = "fgmres"
 solver.options.A11.ksp_rtol = 1e-1 * scr_rtol
 solver.options.A11.ksp_type = "fgmres"
 solver.options.A11.list()
+
 ## OLD SOLVER settings end ##
 
 # %%
@@ -649,5 +654,28 @@ Fig.Points(Model.swarm, fn_colour=Model._viscosityField, logScale=True, colours=
 # Fig.show()
 
 # %%
-Model.run_for(nstep=10, checkpoint_interval=1)
+## debugging code to generate initial fields for viscosity and density ##
+# fields output used to analyse initial setup
 
+#jeta = Model.add_submesh_field(name="cell_vis", nodeDofCount=1)
+#jrho = Model.add_submesh_field(name="cell_rho", nodeDofCount=1)
+#jsig = Model.add_submesh_field(name="cell_sig", nodeDofCount=1)
+#
+#GEO.rcParams["default.outputs"].append("cell_vis")
+#GEO.rcParams["default.outputs"].append("cell_rho")
+#GEO.rcParams["default.outputs"].append("cell_sig")
+#
+#subMesh = Model.mesh.subMesh
+#jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
+#jrho.data[:] = Model._densityFn.evaluate(subMesh)
+#jsig.data[:] = 2. * jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
+
+# %%
+#Model.run_for(nstep=100, checkpoint_interval=5)
+# To restart the model
+#Model.run_for(nstep=200, checkpoint_interval=5, restartStep=-1)
+
+# %%
+Model.run_for(nstep=5, checkpoint_interval=1)
+
+# %%
