@@ -111,16 +111,17 @@ rank    = GEO.rank
 # nEls = (256,96,96)
 
 scr_rtol = 1e-6
+ang = 20
 nEls = (128,48,48)
-# nEls = (16,10,4)
-boxHeight = boxHeight/2.
+#nEls = (16,10,4)
+#boxHeight = boxHeight/2.
 # nEls = (256, 96)
 
 dim = len(nEls)
 
 checkpoint_restart = False
-outputPath = "scalingoutput-" if use_scaling else "output-"
-outputPath = outputPath + "-" + str(scr_rtol) + "-"
+outputPath = "scalingoutput" if use_scaling else "output"
+outputPath = outputPath + "-" + str(scr_rtol) + "-" + str(ang) + "-"
 outputPath = outputPath + (f"{nEls[0]}x{nEls[1]}x{nEls[2]}" if dim == 3 else f"{nEls[0]}x{nEls[1]}")
 outputPath = outputPath + f"_np{GEO.size}"
 
@@ -309,7 +310,6 @@ rib_shape = GEO.shapes.Box(top=0*u.km, bottom=-50*u.km,
 
 if dim == 3:
     # angle we want the ribbon rotated, can be +ve or -ve
-    ang = 20
     rad = np.radians(ang)
 
     # calculated associated half space normals
@@ -339,7 +339,7 @@ added_material_list = [lm, op1_fin, op2_fin, op3_fin, op4_fin, ba1_fin, ba2_fin,
 
 # %%
 from underworld import visualisation as vis
-store = vis.Store(outputPath + "/subduction")
+# store = vis.Store(outputPath + "/subduction")
 
 # %%
 figsize=(1000,300)
@@ -392,7 +392,7 @@ for i in Model.materials:
                 i.plasticity = GEO.VonMises(cohesion = c0, cohesionAfterSoftening = c1)
                                        # TODO epsilon1=0., epsilon2=0.1
 
-if rank == 0: print("Assinging material properties...")
+if rank == 0: print("Assigning material properties...")
 # %% [markdown]
 # **Eclogite transition**
 #
@@ -409,22 +409,22 @@ op1_fin.phase_changes = GEO.PhaseChange((Model.y < nd(-150.*u.kilometers)),
 # op4_fin.phase_changes = GEO.PhaseChange((Model.y < nd(-150.*u.kilometers)),
 #                                           op_change.index)
 
-if rank == 0:
-    print("yes")
-    store = vis.Store("store2D")
-    print("initialised store")
-    print("making figure")
-    figure_one = vis.Figure(store, figsize=(1200,400))
-    print("made figure")
-    print("appending")
-    figure_one.append(Fig.Points(Model.swarm, fn_colour=Model.materialField, fn_mask=materialFilter, opacity=0.5, fn_size=2.0))
-    print("appended")
-    print("setting step")
-    store.step = 0
-    print("step set")
-    print("saving fig")
-    figure_one.save("store")
-    print("saved initial")
+# if rank == 0:
+#     print("yes")
+#     store = vis.Store("store2D")
+#     print("initialised store")
+#     print("making figure")
+#     figure_one = vis.Figure(store, figsize=(1200,400))
+#     print("made figure")
+#     print("appending")
+#     figure_one.append(Fig.Points(Model.swarm, fn_colour=Model.materialField, fn_mask=materialFilter, opacity=0.5, fn_size=2.0))
+#     print("appended")
+#     print("setting step")
+#     store.step = 0
+#     print("step set")
+#     print("saving fig")
+#     figure_one.save("store")
+#     print("saved initial")
 
 # %%
 figsize=(1000,300)
@@ -496,7 +496,7 @@ tracers.add_tracked_field(Model.strainRate, "sr_tensor", units=u.sec**-1, dataTy
 
 
 # %%
-FigTracers = vis.Figure(store, figsize=(1200,400))
+#FigTracers = vis.Figure(store, figsize=(1200,400))
 
 # Show single colour
 # Fig.Points(Model.swarm, colour='gray', opacity=0.5, discrete=True, 
@@ -506,30 +506,30 @@ FigTracers = vis.Figure(store, figsize=(1200,400))
 # FigTracers.Points(Model.swarm, fn_colour=Model.materialField, 
 #            fn_mask=materialFilter, opacity=0.5, fn_size=2.0)
 
-def get_show_tracer(name, colours):
-    t = Model.passive_tracers.get(name)
-    if not t: raise RuntimeError("ERROR: fine tracer called ", name)
+# def get_show_tracer(name, colours):
+#     t = Model.passive_tracers.get(name)
+#     if not t: raise RuntimeError("ERROR: fine tracer called ", name)
     
     # t.variables[0] is the cell index, not of interest, only used to display in 'store'
-    FigTracers.Points(t, t.variables[0],fn_size=2.,
-                      colours=colours,opacity=0.5,colourBar=False)
+#    FigTracers.Points(t, t.variables[0],fn_size=2.,
+#                      colours=colours,opacity=0.5,colourBar=False)
 
-if dim == 3:
-
-        get_show_tracer(name="ba_surface", colours="#22BBBB")
-        get_show_tracer(name='ba_subsurf', colours="#335588")
+# if dim == 3:
+#
+#       get_show_tracer(name="ba_surface", colours="#22BBBB")
+#       get_show_tracer(name='ba_subsurf', colours="#335588")
 #         get_show_tracer(name='slab', colours="Gray40 Goldenrod")
-#         get_show_tracer(name='cont', colours="#335588 #22BBBB")
-#         get_show_tracer(name='arc', colours="Goldenrod Grey41")
+##         get_show_tracer(name='cont', colours="#335588 #22BBBB")
+##         get_show_tracer(name='arc', colours="Goldenrod Grey41")
 #         get_show_tracer(name='buoy', colours="#335588 #335588")
 
-def output_tracers(i):
-
-    store.step = i
-    # Rotate camera angle
-    FigTracers.script(camera)
-    
-    FigTracers.save('foobar.png')
+# def output_tracers(i):
+# 
+#     store.step = i
+#     # Rotate camera angle
+#     #FigTracers.script(camera)
+#     
+#     #FigTracers.save('foobar.png')
 
 # Render in notebook
 # FigTracers.show()
@@ -583,15 +583,15 @@ def post_solve_hook():
     step = Model.step
     time = Model.time.m_as(u.megayear)
     
-    if dim==3: output_tracers(step)
+#    if dim==3: output_tracers(step)
     
     if rank == 0:
         with open(fout,'a') as f:
              f.write(f"{step}\t{time:5e}\t{vrms:5e}\n")
 
-        store.step += 1
-        figure_one.save()
-        print("saved one more timestep")
+        #store.step += 1
+        #figure_one.save()
+        #print("saved one more timestep")
     # DEBUG CODE
     #subMesh = Model.mesh.subMesh
     #jeta.data[:] = Model._viscosityFn.evaluate(subMesh)
@@ -621,7 +621,7 @@ solver.options.scr.ksp_type = "fgmres"
 # Inner solve (velocity), A11 options
 solver.options.A11.ksp_rtol = 1e-1 * scr_rtol
 solver.options.A11.ksp_type = "fgmres"
-solver.options.A11.list()
+solver.options.A11.list
 
 ## OLD SOLVER settings end ##
 
@@ -671,11 +671,9 @@ Fig.Points(Model.swarm, fn_colour=Model._viscosityField, logScale=True, colours=
 #jsig.data[:] = 2. * jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
 
 # %%
-#Model.run_for(nstep=100, checkpoint_interval=5)
 # To restart the model
 #Model.run_for(nstep=200, checkpoint_interval=5, restartStep=-1)
 
 # %%
-Model.run_for(nstep=5, checkpoint_interval=1)
-
+Model.run_for(nstep=300, checkpoint_interval=20)
 # %%
