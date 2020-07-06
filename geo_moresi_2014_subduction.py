@@ -339,7 +339,7 @@ added_material_list = [lm, op1_fin, op2_fin, op3_fin, op4_fin, ba1_fin, ba2_fin,
 
 # %%
 from underworld import visualisation as vis
-# store = vis.Store(outputPath + "/subduction")
+#store = vis.Store(outputPath + "/subduction")
 
 # %%
 figsize=(1000,300)
@@ -355,7 +355,7 @@ materialFilter = Model.materialField > 0
 # swarmPlot = vis.objects.Points(swarm, materialIndex, materialFilter, colours='gray', opacity=0.5, fn_size=2., 
 #                                     discrete=True, colourBar=False, )
 
-Fig = vis.Figure(store, figsize=(1200,400))
+Fig = vis.Figure(figsize=(1200,400))
 
 # Show single colour
 # Fig.Points(Model.swarm, colour='gray', opacity=0.5, discrete=True, 
@@ -481,18 +481,19 @@ def build_tracer_swarm(name, minX, maxX, numX, y, minZ, maxZ, numZ):
 # %%
 # # build 2 tracer swarms, one on the surface, and one 25 km down
 
-tracers = build_tracer_swarm("ba_surface",
-                             backarc_xStart, backarc_xStart+backarc_dx, int(np.ceil(backarc_dx/resolution[0])),
-                             0, 
-                             Model.minCoord[2]+resolution[2]/2,Model.maxCoord[2]-resolution[2]/2, Model.elementRes[2]-1)
-tracers.add_tracked_field(Model.strainRate, "sr_tensor", units=u.sec**-1, dataType="double", count=6)
+if dim == 3:
+    tracers = build_tracer_swarm("ba_surface",
+                                 backarc_xStart, backarc_xStart+backarc_dx, int(np.ceil(backarc_dx/resolution[0])),
+                                 0, 
+                                 Model.minCoord[2]+resolution[2]/2,Model.maxCoord[2]-resolution[2]/2, Model.elementRes[2]-1)
+    tracers.add_tracked_field(Model.strainRate, "sr_tensor", units=u.sec**-1, dataType="double", count=6)
 
-y = -15*u.km
-tracers = build_tracer_swarm("ba_subsurf",
-                             backarc_xStart, backarc_xStart+backarc_dx+y, int(np.ceil(backarc_dx/resolution[0])),
-                             y, 
-                             Model.minCoord[2]+resolution[2]/2,Model.maxCoord[2]-resolution[2]/2, Model.elementRes[2]-1)
-tracers.add_tracked_field(Model.strainRate, "sr_tensor", units=u.sec**-1, dataType="double", count=6)# # build 2 tracer swarms, one on the surface, and one 25 km down
+    y = -15*u.km
+    tracers = build_tracer_swarm("ba_subsurf",
+                                 backarc_xStart, backarc_xStart+backarc_dx+y, int(np.ceil(backarc_dx/resolution[0])),
+                                 y, 
+                                 Model.minCoord[2]+resolution[2]/2,Model.maxCoord[2]-resolution[2]/2, Model.elementRes[2]-1)
+    tracers.add_tracked_field(Model.strainRate, "sr_tensor", units=u.sec**-1, dataType="double", count=6)# # build 2 tracer swarms, one on the surface, and one 25 km down
 
 
 # %%

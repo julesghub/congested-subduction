@@ -5,19 +5,19 @@
 #PBS -l wd
 
 ## 2D PBS options for gadi
-#PBS -l walltime=05:00:00
-#PBS -l mem=8GB
-#PBS -l jobfs=20MB
-#PBS -l ncpus=4
-#PBS -l software=underworld
-#PBS -N subduction2D
+# #PBS -l walltime=00:30:00
+# #PBS -l mem=8GB
+# #PBS -l jobfs=20MB
+# #PBS -l ncpus=4
+# #PBS -l software=underworld
+# #PBS -N subduction2D
 
 ## 3D PBS options for gadi
-# #PBS -l walltime=48:00:00
-# #PBS -l jobfs=100MB
-# #PBS -l mem=100GB
-# #PBS -l ncpus=192
-# #PBS -N subduction3D
+#PBS -l walltime=48:00:00
+#PBS -l jobfs=100MB
+#PBS -l mem=100GB
+#PBS -l ncpus=192
+#PBS -N subduction3D
 source /scratch/q97/codes/UWGeodynamics_2.9.5.sh
 
 MODELNAME="Model"
