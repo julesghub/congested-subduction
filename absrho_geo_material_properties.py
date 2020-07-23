@@ -1,5 +1,6 @@
 # core UW bit
-from UWGeodynamics.scaling import units as u
+import UWGeodynamics as GEO
+u = GEO.UnitRegistry
 
 import geo_model_properties as modprop
 

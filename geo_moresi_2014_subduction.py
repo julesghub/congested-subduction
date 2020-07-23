@@ -29,11 +29,12 @@
 # core UW bit
 import UWGeodynamics as GEO
 from UWGeodynamics import visualisation as vis
-from UWGeodynamics.scaling import units as u
-from UWGeodynamics.scaling import dimensionalise
-from UWGeodynamics.scaling import non_dimensionalise as nd
+
+from UWGeodynamics import dimensionalise
+from UWGeodynamics import non_dimensionalise as nd
 from underworld import function as fn
 
+u = GEO.UnitRegistry
 #GEO.rcParams['nonlinear.max.iterations'] = 20
 #GEO.rcParams['initial.nonlinear.max.iterations'] = 20
 # %%
@@ -80,7 +81,7 @@ if use_scaling:
     Kt = 1. * u.second
     KT = 1. * u.degK
 
-scaling_coefficients = GEO.scaling.get_coefficients()
+scaling_coefficients = GEO.get_coefficients()
 
 scaling_coefficients["[length]"] = KL.to_base_units()
 scaling_coefficients["[time]"]   = Kt.to_base_units()
@@ -97,29 +98,21 @@ else:
 barrier = GEO.uw.mpi.barrier
 rank    = GEO.rank
 
-# %%
-# scaling debug check
-# if rank == 0:
-#     print(dimensionalise(10.,u.meters)," | ", nd(100.*u.megapascal) )
-    #GEO.scaling.get_coefficients()
-
 # %% [markdown]
 # **Setup parameters**
 #
 
 # %%
-# nEls = (256,96,96)
-
 scr_rtol = 1e-6
 ang = 20
 nEls = (128,48,48)
-#nEls = (16,10,4)
-#boxHeight = boxHeight/2.
+# nEls = (256,96,96)
+# nEls = (16,10,4)
 # nEls = (256, 96)
+# nEls = (128, 48)
 
 dim = len(nEls)
 
-checkpoint_restart = False
 outputPath = "scalingoutput" if use_scaling else "output"
 outputPath = outputPath + "-" + str(scr_rtol) + "-" + str(ang) + "-"
 outputPath = outputPath + (f"{nEls[0]}x{nEls[1]}x{nEls[2]}" if dim == 3 else f"{nEls[0]}x{nEls[1]}")
@@ -131,12 +124,6 @@ if rank==0:
     if not os.path.exists(outputPath):
         os.makedirs(outputPath)
 barrier()
-
-if checkpoint_restart == True:
-    # you need to define these
-    outputPath_restart = os.path.join(os.path.abspath("."),"output_checkPoint_restart/")
-    time = 4.38067181e+03
-    step = 1
 
 # %% [markdown]
 # **Create mesh and finite element variables**
@@ -471,29 +458,35 @@ def build_tracer_swarm(name, minX, maxX, numX, y, minZ, maxZ, numZ):
     zz = np.linspace(minZ, maxZ, numZ)
 
     xx, yy, zz = np.meshgrid(xx,yy,zz)
-        
-    tracers = Model.add_passive_tracers(name,
-                                        vertices  = [0.,0.,0.],
-                                        centroids = [xx, yy, zz]) 
+    
+    coords = np.ndarray((xx.size, 3))
+    coords[:,0] = xx.ravel()
+    coords[:,1] = yy.ravel()
+    coords[:,2] = zz.ravel()
+       
+    tracers = Model.add_passive_tracers(name, vertices = coords)
+
     return tracers
 
 
 # %%
 # # build 2 tracer swarms, one on the surface, and one 25 km down
 
-if dim == 3:
+# DISABLE THE TRACERS! JG23Jun
+
+if False and dim == 3:
     tracers = build_tracer_swarm("ba_surface",
                                  backarc_xStart, backarc_xStart+backarc_dx, int(np.ceil(backarc_dx/resolution[0])),
                                  0, 
                                  Model.minCoord[2]+resolution[2]/2,Model.maxCoord[2]-resolution[2]/2, Model.elementRes[2]-1)
-    tracers.add_tracked_field(Model.strainRate, "sr_tensor", units=u.sec**-1, dataType="double", count=6)
+    tracers.add_tracked_field(Model.strainRate, "sr_tensora", units=u.sec**-1, dataType="double", count=6)
 
     y = -15*u.km
     tracers = build_tracer_swarm("ba_subsurf",
                                  backarc_xStart, backarc_xStart+backarc_dx+y, int(np.ceil(backarc_dx/resolution[0])),
                                  y, 
                                  Model.minCoord[2]+resolution[2]/2,Model.maxCoord[2]-resolution[2]/2, Model.elementRes[2]-1)
-    tracers.add_tracked_field(Model.strainRate, "sr_tensor", units=u.sec**-1, dataType="double", count=6)# # build 2 tracer swarms, one on the surface, and one 25 km down
+    tracers.add_tracked_field(Model.strainRate, "sr_tensorb", units=u.sec**-1, dataType="double", count=6)# # build 2 tracer swarms, one on the surface, and one 25 km down
 
 
 # %%
@@ -541,9 +534,14 @@ Model.minViscosity = 1e18 * u.Pa * u.sec
 Model.maxViscosity = 1e25 * u.Pa * u.sec
 
 # %%
-Model.set_velocityBCs( left=[0.,None,None], right=[0.,None,None],
+if dim == 2:
+    Model.set_velocityBCs( left=[0.,None,None], right=[0.,None,None],
+                       bottom=[None,0.,None], top=[None,0.,None])
+else:
+    Model.set_velocityBCs( left=[0.,None,None], right=[0.,None,None],
                        front=[None,0.,None], back=[None,0.,None],
                        bottom=[None,None,0.], top=[None,None,0.])
+
 
 # %%
 if rank == 0: print("Calling init_model()...")
@@ -627,8 +625,8 @@ solver.options.A11.list
 ## OLD SOLVER settings end ##
 
 # %%
-#if dim == 2: 
-#    solver.set_inner_method("mumps")
+if dim == 2: 
+    solver.set_inner_method("mumps")
 #    solver.options.scr.ksp_rtol = 1e-6 # small tolerance is good in 2D, not sure if too tight for 3D
 #else:
 #    solver.options.A11.ksp_rtol = 1.0e-5
@@ -673,8 +671,7 @@ Fig.Points(Model.swarm, fn_colour=Model._viscosityField, logScale=True, colours=
 
 # %%
 # To restart the model
-#Model.run_for(nstep=200, checkpoint_interval=5, restartStep=-1)
+# Model.run_for(nstep=200, checkpoint_interval=5, restartStep=-1)
 
 # %%
-Model.run_for(nstep=300, checkpoint_interval=20)
-# %%
+#Model.run_for(nstep=2, checkpoint_interval=1)
