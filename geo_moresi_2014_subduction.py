@@ -472,21 +472,20 @@ def build_tracer_swarm(name, minX, maxX, numX, y, minZ, maxZ, numZ):
 # %%
 # # build 2 tracer swarms, one on the surface, and one 25 km down
 
-# DISABLE THE TRACERS! JG23Jun
-
-if False and dim == 3:
+if dim == 3:
     tracers = build_tracer_swarm("ba_surface",
                                  backarc_xStart, backarc_xStart+backarc_dx, int(np.ceil(backarc_dx/resolution[0])),
                                  0, 
                                  Model.minCoord[2]+resolution[2]/2,Model.maxCoord[2]-resolution[2]/2, Model.elementRes[2]-1)
-    tracers.add_tracked_field(Model.strainRate, "sr_tensora", units=u.sec**-1, dataType="double", count=6)
+    tracers.add_tracked_field(Model.strainRate, "sr_tensor", units=u.sec**-1, dataType="double", count=6)
 
+#     2nd tracers must be called something different to the 1st, i.e. 'tracers'
     y = -15*u.km
-    tracers = build_tracer_swarm("ba_subsurf",
+    t2 = build_tracer_swarm("ba_subsurf",
                                  backarc_xStart, backarc_xStart+backarc_dx+y, int(np.ceil(backarc_dx/resolution[0])),
                                  y, 
                                  Model.minCoord[2]+resolution[2]/2,Model.maxCoord[2]-resolution[2]/2, Model.elementRes[2]-1)
-    tracers.add_tracked_field(Model.strainRate, "sr_tensorb", units=u.sec**-1, dataType="double", count=6)# # build 2 tracer swarms, one on the surface, and one 25 km down
+    t2.add_tracked_field(Model.strainRate, "sr_tensor", units=u.sec**-1, dataType="double", count=6)# # build 2 tracer swarms, one on the surface, and one 25 km down
 
 
 # %%
@@ -623,14 +622,8 @@ solver.options.A11.ksp_type = "fgmres"
 solver.options.A11.list
 
 ## OLD SOLVER settings end ##
-
-# %%
 if dim == 2: 
     solver.set_inner_method("mumps")
-#    solver.options.scr.ksp_rtol = 1e-6 # small tolerance is good in 2D, not sure if too tight for 3D
-#else:
-#    solver.options.A11.ksp_rtol = 1.0e-5
-#    solver.options.scr.ksp_rtol = 1.0e-6 
 
 # solver.print_petsc_options()
 
@@ -670,8 +663,5 @@ Fig.Points(Model.swarm, fn_colour=Model._viscosityField, logScale=True, colours=
 #jsig.data[:] = 2. * jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
 
 # %%
-# To restart the model
-# Model.run_for(nstep=200, checkpoint_interval=5, restartStep=-1)
-
-# %%
-#Model.run_for(nstep=2, checkpoint_interval=1)
+Model.run_for(nstep=200, checkpoint_interval=1)
+# Model.run_for(nstep=200, checkpoint_interval=1, restartStep=200)
