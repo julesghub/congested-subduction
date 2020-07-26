@@ -18,7 +18,7 @@
 #PBS -l mem=100GB
 #PBS -l ncpus=192
 #PBS -N subduction3D
-source /scratch/q97/codes/UWGeodynamics_2.9.5.sh
+source /scratch/q97/codes/UWGeodynamics_2.9.6.sh
 
 MODELNAME="Model"
 OUTPUTPATH=`pwd`
