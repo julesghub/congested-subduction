@@ -482,11 +482,11 @@ if False and dim == 3:
     tracers.add_tracked_field(Model.strainRate, "sr_tensora", units=u.sec**-1, dataType="double", count=6)
 
     y = -15*u.km
-    tracers = build_tracer_swarm("ba_subsurf",
+    t2 = build_tracer_swarm("ba_subsurf",
                                  backarc_xStart, backarc_xStart+backarc_dx+y, int(np.ceil(backarc_dx/resolution[0])),
                                  y, 
                                  Model.minCoord[2]+resolution[2]/2,Model.maxCoord[2]-resolution[2]/2, Model.elementRes[2]-1)
-    tracers.add_tracked_field(Model.strainRate, "sr_tensorb", units=u.sec**-1, dataType="double", count=6)# # build 2 tracer swarms, one on the surface, and one 25 km down
+    t2.add_tracked_field(Model.strainRate, "sr_tensorb", units=u.sec**-1, dataType="double", count=6)# # build 2 tracer swarms, one on the surface, and one 25 km down
 
 
 # %%
