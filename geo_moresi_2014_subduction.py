@@ -474,7 +474,7 @@ def build_tracer_swarm(name, minX, maxX, numX, y, minZ, maxZ, numZ):
 
 # DISABLE THE TRACERS! JG23Jun
 
-if False and dim == 3:
+if dim == 3:
     tracers = build_tracer_swarm("ba_surface",
                                  backarc_xStart, backarc_xStart+backarc_dx, int(np.ceil(backarc_dx/resolution[0])),
                                  0, 
