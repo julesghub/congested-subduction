@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+# %%
 
 # Dynamics of continental accretion
 # ======
@@ -12,7 +13,7 @@
 # 
 # Moresi, L., P. G. Betts, M. S. Miller, and R. A. Cayley. 2014. “Dynamics of Continental Accretion.” Nature 508 (7495): 245–48. [doi:10.1038/nature13033](https://www.nature.com/articles/nature13033)
 
-# In[1]:
+# %%
 
 
 # core UW bit
@@ -28,7 +29,7 @@ u = GEO.UnitRegistry
 #GEO.rcParams['initial.nonlinear.max.iterations'] = 20
 
 
-# In[2]:
+# %%
 
 
 # 3rd party python modules
@@ -38,7 +39,7 @@ import os
 import scipy
 
 
-# In[3]:
+# %%
 
 
 gravity = 9.8 * u.meter / u.second**2
@@ -90,7 +91,7 @@ else:
     import absrho_geo_material_properties as matprop
 
 
-# In[4]:
+# %%
 
 
 # shortcuts for parallel wrappers
@@ -101,7 +102,7 @@ rank    = GEO.rank
 # **Setup parameters**
 # 
 
-# In[5]:
+# %%
 
 
 scr_rtol = 1e-6
@@ -111,7 +112,7 @@ shifted = 650
 # nEls = (256,96,96)
 # nEls = (16,10,4)
 # nEls = (256, 96)
-# nEls = (128, 48)
+nEls = (128, 48)
 
 dim = len(nEls)
 
@@ -121,7 +122,7 @@ outputPath = outputPath + (f"{nEls[0]}x{nEls[1]}x{nEls[2]}" if dim == 3 else f"{
 outputPath = outputPath + f"_np{GEO.size}"
 
 
-# In[6]:
+# %%
 
 
 outputPath = os.path.join(os.path.abspath("."), outputPath)
@@ -133,7 +134,7 @@ barrier()
 
 # **Create mesh and finite element variables**
 
-# In[7]:
+# %%
 
 
 # Define our vertical unit vector using a python tuple
@@ -156,7 +157,7 @@ Model = GEO.Model(elementRes = nEls,
                   outputDir  = outputPath)
 
 
-# In[8]:
+# %%
 
 
 if use_scaling:
@@ -169,7 +170,7 @@ else:
     Model.maxViscosity = 1e25  * u.Pa * u.sec
 
 
-# In[9]:
+# %%
 
 
 resolution = [ abs(Model.maxCoord[d]-Model.minCoord[d])/Model.elementRes[d] for d in range(Model.mesh.dim) ]
@@ -178,7 +179,7 @@ if rank == 0:
     [ print(f'{d:.2f}') for d in resolution ]
 
 
-# In[10]:
+# %%
 
 
 # Parameters for the inital material layout
@@ -220,7 +221,7 @@ bouyStrip_dy =  50. * u.kilometer
 bouyStrip_xStart = slab_xStart + slab_dx - bouyStrip_dx
 
 
-# In[11]:
+# %%
 
 
 #variables for initialisation of shapes
@@ -246,7 +247,7 @@ crat_y1 = -0.*nd(craton_dy)
 crat_y2 = -1.*nd(craton_dy)
 
 
-# In[12]:
+# %%
 
 
 # general shape functions
@@ -259,7 +260,7 @@ def backarcGeo(x, y, dx, dy):
     return GEO.shapes.Polygon(shape)
 
 
-# In[13]:
+# %%
 
 
 #initialising all features as shapes
@@ -347,7 +348,7 @@ added_material_list = [lm, op1_fin, op2_fin, op3_fin, op4_fin, ba1_fin, ba2_fin,
                        t2_fin, c1_fin, c2_fin, bs_fin, op_change, rib]
 
 
-# In[14]:
+# %%
 
 
 figsize=(1000,300)
@@ -385,7 +386,7 @@ Fig.Points(Model.swarm, fn_colour=Model.materialField,
 #Fig.window()
 
 
-# In[15]:
+# %%
 
 
 #assigning properties (density, viscosity, etc) to shapes.
@@ -410,7 +411,7 @@ if rank == 0: print("Assigning material properties...")
 # 
 # Assume that the oceanic crust transforms instantaneously and completely to eclogite at a depth of 150 km
 
-# In[16]:
+# %%
 
 
 op1_fin.phase_changes = GEO.PhaseChange((Model.y < nd(-150.*u.kilometers)),
@@ -431,7 +432,7 @@ if rank == 0:
     figure_one.save("store" + str(shifted))
 
 
-# In[17]:
+# %%
 
 
 figsize=(1000,300)
@@ -460,14 +461,11 @@ Fig.Points(Model.swarm, fn_colour=Model.materialField,
 # Save image to disk
 # Fig.save("Figure_1.png")
 
-# Rotate camera angle
-Fig.script(camera)
-
 # Render in notebook
 Fig.show()
 
 
-# In[18]:
+# %%
 
 
 def build_tracer_swarm(name, minX, maxX, numX, y, minZ, maxZ, numZ):
@@ -492,12 +490,10 @@ def build_tracer_swarm(name, minX, maxX, numX, y, minZ, maxZ, numZ):
     return tracers
 
 
-# In[19]:
+# %%
 
 
 # # build 2 tracer swarms, one on the surface, and one 25 km down
-
-# DISABLE THE TRACERS! JG23Jun
 
 if dim == 3:
     tracers = build_tracer_swarm("ba_surface",
@@ -514,7 +510,7 @@ if dim == 3:
     t2.add_tracked_field(Model.strainRate, "sr_tensorb", units=u.sec**-1, dataType="double", count=6)# # build 2 tracer swarms, one on the surface, and one 25 km down
 
 
-# In[20]:
+# %%
 
 
 #FigTracers = vis.Figure(store, figsize=(1200,400))
@@ -556,14 +552,14 @@ if dim == 3:
 # FigTracers.show()
 
 
-# In[21]:
+# %%
 
 
 Model.minViscosity = 1e18 * u.Pa * u.sec
 Model.maxViscosity = 1e25 * u.Pa * u.sec
 
 
-# In[22]:
+# %%
 
 
 if dim == 2:
@@ -575,31 +571,29 @@ else:
                        bottom=[None,None,0.], top=[None,None,0.])
 
 
-# In[23]:
+# %%
 
 
 if rank == 0: print("Calling init_model()...")
 Model.init_model()
 
 
-# In[24]:
+# %%
 
 
 # force the Eclogite phase transition before the model begins
 Model._phaseChangeFn()
 
 
-# In[25]:
+# %%
 
 
 figViscosity = vis.Figure(figsize=figsize, axis=True)
 figViscosity.append( vis.objects.Points(Model.swarm, Model.viscosityField, colours='dem1', fn_size=2., logScale=True) )
-if dim == 3:
-    figViscosity.script(camera)
 # figViscosity.show()
 
 
-# In[26]:
+# %%
 
 
 Fig = vis.Figure(figsize=(1200,400))
@@ -615,7 +609,7 @@ Fig.Points(Model.swarm, fn_colour=Model.densityField,
 # Fig.show()
 
 
-# In[ ]:
+# %%
 
 
 fout = outputPath+'/FrequentOutput.dat'
@@ -646,7 +640,7 @@ def post_solve_hook():
 Model.post_solve_functions["Measurements"] = post_solve_hook
 
 
-# In[ ]:
+# %%
 
 
 ## We can test different solvers by uncommentting this section
@@ -674,7 +668,7 @@ solver.options.A11.list
 ## OLD SOLVER settings end ##
 
 
-# In[ ]:
+# %%
 
 
 if dim == 2: 
@@ -687,13 +681,13 @@ if dim == 2:
 # solver.print_petsc_options()
 
 
-# In[ ]:
+# %%
 
 
 # GEO.rcParams["initial.nonlinear.tolerance"] = 4e-2
 
 
-# In[ ]:
+# %%
 
 
 Fig = vis.Figure(figsize=(1200,400))
@@ -701,7 +695,7 @@ Fig.Points(Model.swarm, fn_colour=2.*Model.viscosityField*Model.strainRate_2ndIn
 # Fig.show()
 
 
-# In[ ]:
+# %%
 
 
 Fig = vis.Figure(figsize=(1200,400))
@@ -709,15 +703,13 @@ Fig.Points(Model.swarm, fn_colour=Model._stressField, logScale=True, colours='de
 # Fig.show()
 
 
-# In[ ]:
-
-
+# %%
 Fig = vis.Figure(figsize=(1200,400))
-Fig.Points(Model.swarm, fn_colour=Model._viscosityField, logScale=True, colours='dem1', fn_size=1.0)
-# Fig.show()
+Fig.Points(Model.swarm, fn_colour=Model.materialField, colours='dem1', fn_size=1.0)
+Fig.show()
 
 
-# In[ ]:
+# %%
 
 
 ## debugging code to generate initial fields for viscosity and density ##
@@ -737,129 +729,51 @@ Fig.Points(Model.swarm, fn_colour=Model._viscosityField, logScale=True, colours=
 #jsig.data[:] = 2. * jeta.data[:] * Model.strainRate_2ndInvariant.evaluate(subMesh)
 
 
-# In[ ]:
-
-
-# To restart the model
-# Model.run_for(nstep=200, checkpoint_interval=5, restartStep=-1)
-
-
-# In[ ]:
-
-
-Model.run_for(nstep=200, checkpoint_interval=1)
-
-
-# In[ ]:
-
-
-#RESTART
-
-
-# In[ ]:
-
-
-Model.run_for(nstep=200, restartStep=78, restartDir="output-1e-06-20-620-50x50_np1")
-#Model.run_for(nstep=200, checkpoint_interval=5, restartStep=52, restartDir="output-1e-06-20-700-20x20_np1")
-
-
-# In[ ]:
-
-
-figsize=(1000,300)
-camera = ['rotate x 30']
-boundingBox=( minCoord, maxCoord )
-
-materialFilter = Model.materialField > 0
-
-
-# ERROR with boundaringBox, maybe BUG for Okaluza
-# figSwarm = vis.Figure(figsize=figsize, boundingBox=boundingBox )
-
-# swarmPlot = vis.objects.Points(swarm, materialIndex, materialFilter, colours='gray', opacity=0.5, fn_size=2., 
-#                                     discrete=True, colourBar=False, )
-
-Fig = vis.Figure(figsize=(1200,400))
-
-# Show single colour
-# Fig.Points(Model.swarm, colour='gray', opacity=0.5, discrete=True, 
-#            fn_mask=materialFilter, fn_size=2.0, colourBar=False)
-
-# Show all glory
-Fig.Points(Model.swarm, fn_colour=Model.materialField, 
-           fn_mask=materialFilter, opacity=0.5, fn_size=2.0)
-
-# Save image to disk
-# Fig.save("Figure_1.png")
-
-# Rotate camera angle
-#Fig.script(camera)
-
-# Render in notebook
-Fig.show()
-
-
-# In[ ]:
-
-
+# %%
+# make the rib shape, 
+# best moved to where the other shapes are created above for consistency.
 ribbon_dx =  500. * u.kilometer
 ribbon_dy =   50. * u.kilometer
 ribbon_dz = 1500. * u.kilometer 
 ribbon_xStart = slab_xStart + shifted * u.kilometer
-rib.shape = GEO.shapes.Box(top=0*u.km, bottom=-50*u.km,
+rib_shape = GEO.shapes.Box(top=0*u.km, bottom=-50*u.km,
                            minX=ribbon_xStart, maxX=ribbon_xStart+ribbon_dx)
 
-matField = Model.swarm_variables['materialField']
-rib.index
-matField.data
-Model.swarm.data
-isInsideShape = rib.shape.evaluate(Model.swarm.data)# where particle is inside the ribbon update it's materialField index
-Model.swarm_variables['materialField'].data[:] = np.where(isInsideShape == True, rib.index, matField.data )
+# a single parameter to switch between restart workflow or not.
+RESTART = False
 
 
-# In[ ]:
+if not RESTART: 
+    Model.run_for(nstep=10, checkpoint_interval=10)
+else:
+    # if the restartDir is the same as the current Model.outputDir we don't
+    # require the `restartDir` argument. nstep MUST be 0 to allow the fancy
+    # ribbon addition below
+    Model.run_for(nstep=0, restartStep=10)
+    
+    # do fancy ribbon addition via shape
+    isInsideShape = rib_shape.evaluate(Model.swarm.data)# where particle is inside the ribbon update it's materialField index
+    matField = Model.swarm_variables['materialField']
+    Model.swarm_variables['materialField'].data[:] = np.where(isInsideShape == True, 
+                                                              rib.index, matField.data )
 
 
-figsize=(1000,300)
-camera = ['rotate x 30']
-boundingBox=( minCoord, maxCoord )
-
-materialFilter = Model.materialField > 0
-
-
-# ERROR with boundaringBox, maybe BUG for Okaluza
-# figSwarm = vis.Figure(figsize=figsize, boundingBox=boundingBox )
-
-# swarmPlot = vis.objects.Points(swarm, materialIndex, materialFilter, colours='gray', opacity=0.5, fn_size=2., 
-#                                     discrete=True, colourBar=False, )
-
+# %%
+# to visualise after workflow switch
 Fig = vis.Figure(figsize=(1200,400))
-
-# Show single colour
-# Fig.Points(Model.swarm, colour='gray', opacity=0.5, discrete=True, 
-#            fn_mask=materialFilter, fn_size=2.0, colourBar=False)
-
-# Show all glory
-Fig.Points(Model.swarm, fn_colour=Model.materialField, 
-           fn_mask=materialFilter, opacity=0.5, fn_size=2.0)
-
-# Save image to disk
-# Fig.save("Figure_1.png")
-
-# Rotate camera angle
-#Fig.script(camera)
-
-# Render in notebook
+Fig.Points(Model.swarm, fn_colour=Model.materialField, colours='dem1', fn_size=1.0)
 Fig.show()
 
+# %%
+# not continue running model as usual.
+Model.run_for(nstep=3)
 
-# In[ ]:
+# %%
+Fig = vis.Figure(figsize=(1200,400))
+Fig.Points(Model.swarm, fn_colour=Model.materialField, colours='dem1', fn_size=1.0)
+Fig.show()
 
-
-Model.run_for(nstep=200, checkpoint_interval=1)
-
-
-# In[ ]:
+# %%
 
 
 from UWGeodynamics import visualisation as vis
@@ -872,7 +786,7 @@ for i in view.figures:
     view.window()
 
 
-# In[ ]:
+# %%
 
 
 figs = view.figures
@@ -884,7 +798,7 @@ for i in view.figures:
     view.show()
 
 
-# In[ ]:
+# %%
 
 
 figs = view.figures
@@ -896,7 +810,7 @@ for i in view.figures:
     view.show()
 
 
-# In[ ]:
+# %%
 
 
 
